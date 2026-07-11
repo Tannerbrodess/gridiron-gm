@@ -136,6 +136,7 @@
   .result-hero{text-align:center;padding:8px 0 4px}
   .result-eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--steel);margin-bottom:10px}
   .pct-big{font-family:'Archivo';font-weight:900;font-size:72px;line-height:.9;letter-spacing:-.03em;background:linear-gradient(180deg,#fff,var(--cash));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:2px}
+  .pct-big .pctsign{font-size:38px;-webkit-text-fill-color:var(--cash);margin-left:2px}
   .pct-label{font-family:'Archivo';font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:.04em;color:var(--cash);margin-bottom:6px}
   .rank-line{font-size:13px;color:var(--steel-lt);margin-bottom:2px}
   .rank-line b{color:var(--chalk);font-family:'Space Mono'}
@@ -161,7 +162,28 @@
   .share-copied{font-size:12px;color:var(--cash);margin-top:10px;height:14px;transition:.2s;opacity:0}
   .share-copied.show{opacity:1}
 
-  /* ---------- helpers / footer ---------- */
+  /* ---------- spin meter ---------- */
+  .spinmeter{display:flex;align-items:center;gap:10px;margin-bottom:13px}
+  .spindots{display:flex;gap:5px}
+  .spindots .sd{width:22px;height:5px;border-radius:3px;background:#0a0f1c;box-shadow:inset 0 1px 2px rgba(0,0,0,.6)}
+  .spindots .sd.on{background:var(--blitz);box-shadow:0 0 6px rgba(255,91,46,.5)}
+  .spinmeter .spinlbl{font-size:11px;color:var(--steel);letter-spacing:.04em}
+
+  /* ---------- ceiling block on result ---------- */
+  .ceiling-block{display:flex;flex-direction:column;gap:18px;margin:22px 0 4px}
+  .cl-row{}
+  .cl-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .cl-lbl{font-family:'Archivo';font-weight:800;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel-lt)}
+  .cl-nums b{font-family:'Space Mono';font-weight:700;font-size:22px;color:var(--chalk)}
+  .cl-max{font-size:12px;color:var(--steel)}
+  .cl-track{height:14px;border-radius:8px;background:#0a0f1c;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.6);position:relative}
+  .cl-fill{height:100%;border-radius:8px;transition:width .1s linear;position:relative}
+  .cl-fill.yds{background:linear-gradient(90deg,var(--cash-dim),var(--cash))}
+  .cl-fill.tds{background:linear-gradient(90deg,#c8340f,var(--blitz))}
+  .cl-fill::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25))}
+  .cl-pct{font-size:11px;color:var(--steel-lt);margin-top:5px;text-align:right}
+
+
   .hidden{display:none!important}
   .fade{animation:fade .4s ease}
   @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
@@ -244,7 +266,7 @@
   <div class="stage" id="stage"><!-- injected --></div>
 
   <footer>
-    Real player-seasons, 2015–2025 · Value = production percentile within position<br/>
+    Real player-seasons, 2015–2025 · Measured against the best trio in the dataset<br/>
     <span id="poolCount"></span>
   </footer>
 </div>
@@ -253,11 +275,11 @@
 <div class="modal-bg" id="howModal">
   <div class="modal">
     <h3>Build the Trio</h3>
-    <p>You've got an <b style="color:var(--cash)">NIL budget</b> to sign one QB, one RB, and one WR from the last 11 years of college football. Best three-man offense wins.</p>
-    <div class="step"><div class="n">1</div><div class="t"><b>Spin each position</b> — QB first, then RB, then WR. Every spin deals you a fresh set of real players at different NIL prices.</div></div>
-    <div class="step"><div class="n">2</div><div class="t"><b>Sign one, bank the rest.</b> Overspend on your QB and you'll be bargain-hunting the RB and WR — and you can't see the next spin until you commit.</div></div>
-    <div class="step"><div class="n">3</div><div class="t"><b>Get ranked.</b> Every player's value is their production percentile at their position, so a great RB counts as much as a great QB. Your trio is scored against <b>every possible trio</b> in the pool.</div></div>
-    <p style="margin-top:4px;font-size:12px;color:var(--steel)">The perfect trio costs way more than you have. That's the point — find value, not just stars.</p>
+    <p>You've got a <b style="color:var(--cash)">$10M NIL budget</b> to sign one QB, one RB, and one WR from the last 11 years of college football. Get as close as you can to the best trio ever.</p>
+    <div class="step"><div class="n">1</div><div class="t"><b>Spin each position</b> — QB first, then RB, then WR. Each spin deals four real players at different NIL prices. You get up to <b>3 spins per position</b>, so re-spin if you don't like the board.</div></div>
+    <div class="step"><div class="n">2</div><div class="t"><b>Sign one, bank the rest.</b> The top talent is expensive — you can afford at most one true blue-chip all game. Overspend early and you're bargain-hunting the rest, and you can't see the next spin until you commit.</div></div>
+    <div class="step"><div class="n">3</div><div class="t"><b>Chase the ceiling.</b> Your total yards and TDs are measured against the <b>best possible trio</b> in the dataset, and your percentile is how you stack up against realistic budget builds — not random noise, so a high percentile is genuinely earned.</div></div>
+    <p style="margin-top:4px;font-size:12px;color:var(--steel)">Unspent NIL scores you nothing. The best builds spend almost all of it — on the right players.</p>
     <button class="modal-close" id="closeModal">Got it</button>
   </div>
 </div>
@@ -267,16 +289,19 @@
 (function(){
   "use strict";
   const QB=GAMEDATA.QB, RB=GAMEDATA.RB, WR=GAMEDATA.WR, CDF=GAMEDATA.CDF;
+  const MAX_YDS=GAMEDATA.MAXY, MAX_TDS=GAMEDATA.MAXT; // best-trio ceiling
+  const RPCT=GAMEDATA.RPCT; // {step, lut[]} percentile vs realistic budget builds
   // record = [name, team, season, yards, tds, val, cost]
   const POOL={QB,RB,WR};
   const ORDER=["QB","RB","WR"];
   const POSNAME={QB:"Quarterback",RB:"Running Back",WR:"Wide Receiver"};
   const BUDGET=10_000_000;
-  const CANDIDATES=4; // per spin
+  const CANDIDATES=4;   // per spin
+  const SPIN_LIMIT=3;   // spins allowed per position
 
   let state=null;
   function fresh(){
-    return {budget:BUDGET, spent:0, idx:0, picks:[], currentSpin:null};
+    return {budget:BUDGET, spent:0, idx:0, picks:[], currentSpin:null, spinsUsed:0};
   }
 
   // ---- money formatting ----
@@ -306,14 +331,14 @@
       const r=poolIdx[(Math.random()*poolIdx.length)|0];
       used.add(r); return r;
     }
-    // Band 1: a star (top ~15% by cost) — aspirational, maybe unaffordable
-    let a=pick(p=>p[6]>=2_600_000);
+    // Band 1: a star (priciest tier) — aspirational, often unaffordable if you've spent
+    let a=pick(p=>p[6]>=3_500_000);
     // Band 2: upper-mid
-    let b=pick(p=>p[6]>=1_000_000 && p[6]<2_600_000);
+    let b=pick(p=>p[6]>=1_200_000 && p[6]<3_500_000);
     // Band 3: mid/value
-    let c=pick(p=>p[6]>=250_000 && p[6]<1_000_000);
+    let c=pick(p=>p[6]>=300_000 && p[6]<1_200_000);
     // Band 4: bargain
-    let d=pick(p=>p[6]<250_000);
+    let d=pick(p=>p[6]<300_000);
     let raw=[a,b,c,d].filter(x=>x>=0);
     // Fill any missing slots with random unused
     while(raw.length<CANDIDATES){
@@ -322,42 +347,51 @@
       raw.push(r);
     }
     // If nothing affordable at all is present, force-insert the cheapest overall
+    // and flag it as always-signable so the player can never be soft-locked.
+    let forcedIdx=-1;
     const anyAffordable=raw.some(i=>list[i][6]<=remaining);
     if(!anyAffordable){
       // find global cheapest
       let ci=0; for(let i=1;i<n;i++){ if(list[i][6]<list[ci][6]) ci=i; }
-      if(!used.has(ci)){ raw[raw.length-1]=ci; }
+      raw[raw.length-1]=ci;
+      forcedIdx=ci;
     }
     // sort by cost desc for display
     raw.sort((x,y)=>list[y][6]-list[x][6]);
-    return raw.map(i=>({i,rec:list[i]}));
+    return raw.map(i=>({i,rec:list[i],forced:i===forcedIdx}));
   }
 
   function tierOf(cost){
-    if(cost>=2_600_000) return "elite";
-    if(cost>=1_000_000) return "stud";
-    if(cost>=250_000) return "starter";
+    if(cost>=3_500_000) return "elite";
+    if(cost>=1_200_000) return "stud";
+    if(cost>=300_000) return "starter";
     return "value";
   }
   function tierLabel(cost){
-    if(cost>=2_600_000) return "Blue chip";
-    if(cost>=1_000_000) return "Impact";
-    if(cost>=250_000) return "Starter";
+    if(cost>=3_500_000) return "Blue chip";
+    if(cost>=1_200_000) return "Impact";
+    if(cost>=300_000) return "Starter";
     return "Sleeper";
   }
 
-  // ---- percentile from CDF (index = trio score 0..3000) ----
-  function percentile(score){
-    const s=Math.max(0,Math.min(3000,score|0));
-    return CDF[s]/1000; // fraction of trios beaten, 0..1
+  // ---- percentile vs realistic budget builds ----
+  // achievement = combined % of ceiling (yards & TDs). Returns % of realistic
+  // builds this trio beats, from the simulated reference distribution.
+  function realPercentile(achievement){
+    const step=RPCT.step, lut=RPCT.lut;
+    const x=Math.max(0,Math.min(100,achievement));
+    const b=Math.round(x/step);
+    return lut[Math.max(0,Math.min(lut.length-1,b))]/10; // 0..100
   }
-  function grade(topPct){ // topPct = % of trios you're better than
-    if(topPct>=99.5) return {g:"S+",c:"#FFC94D",bg:"rgba(255,201,77,.14)"};
-    if(topPct>=98) return {g:"S",c:"#FFC94D",bg:"rgba(255,201,77,.12)"};
-    if(topPct>=94) return {g:"A",c:"#00E08A",bg:"rgba(0,224,138,.14)"};
-    if(topPct>=85) return {g:"B",c:"#00E08A",bg:"rgba(0,224,138,.10)"};
-    if(topPct>=65) return {g:"C",c:"#9AA6BC",bg:"rgba(154,166,188,.12)"};
-    if(topPct>=40) return {g:"D",c:"#FF9B6E",bg:"rgba(255,91,46,.10)"};
+  // ---- grade based on how close the trio gets to the max-possible ceiling ----
+  // pctOfMax = combined (yards+TDs) achievement vs the best trio in the dataset.
+  function grade(pctOfMax){
+    if(pctOfMax>=90) return {g:"S+",c:"#FFC94D",bg:"rgba(255,201,77,.14)"};
+    if(pctOfMax>=82) return {g:"S",c:"#FFC94D",bg:"rgba(255,201,77,.12)"};
+    if(pctOfMax>=74) return {g:"A",c:"#00E08A",bg:"rgba(0,224,138,.14)"};
+    if(pctOfMax>=64) return {g:"B",c:"#00E08A",bg:"rgba(0,224,138,.10)"};
+    if(pctOfMax>=50) return {g:"C",c:"#9AA6BC",bg:"rgba(154,166,188,.12)"};
+    if(pctOfMax>=35) return {g:"D",c:"#FF9B6E",bg:"rgba(255,91,46,.10)"};
     return {g:"F",c:"#FF5B2E",bg:"rgba(255,91,46,.14)"};
   }
 
@@ -416,9 +450,10 @@
     document.getElementById("introHow").onclick=openModal;
   }
 
-  function beginSpin(){
+  function beginSpin(isReSpin){
     const pos=ORDER[state.idx];
     const rem=state.budget-state.spent;
+    if(isReSpin){ state.spinsUsed++; }
     updateRoster();
     // spinning animation first
     stage.className="stage fade";
@@ -457,7 +492,7 @@
     cands.forEach((c,i)=>{
       const rec=c.rec;
       const cost=rec[6];
-      const aff=cost<=rem;
+      const aff=cost<=rem || c.forced; // forced fallback is always signable
       const tier=tierOf(cost);
       cardsHtml+=`
         <button class="card" data-i="${i}" ${aff?"":"disabled"}>
@@ -478,30 +513,48 @@
           </span>
         </button>`;
     });
+    const spinsLeft=SPIN_LIMIT-1-state.spinsUsed; // re-spins remaining after this board
+    const canReSpin=spinsLeft>0;
+    const affordableExists=cands.some(c=>c.rec[6]<=rem);
     stage.className="stage fade";
     stage.innerHTML=`
       <div class="spinhead">
         <div class="now-picking">Sign a <b>${pos}</b></div>
         <div class="budget-mini mono">${money(rem)} left</div>
       </div>
+      <div class="spinmeter">
+        <span class="spindots">${spinDots(state.spinsUsed)}</span>
+        <span class="spinlbl">${spinsLeft>0? spinsLeft+" re-spin"+(spinsLeft>1?"s":"")+" left":"Last board — no re-spins left"}</span>
+      </div>
       <div class="cards">${cardsHtml}</div>
-      <div class="microcopy">${spinHint(pos,rem,cands)}</div>
+      <div class="microcopy">${spinHint(pos,rem,cands,canReSpin,affordableExists)}</div>
       <div class="btnrow">
-        <button class="cta ghost" id="rerollBtn" title="Deal a new board — no penalty">↻ Re-spin this board</button>
+        <button class="cta ghost" id="rerollBtn" ${canReSpin?"":"disabled"} title="${canReSpin?'Deal a new board':'No re-spins left for this position'}">↻ Re-spin${canReSpin?" ("+spinsLeft+" left)":" — none left"}</button>
       </div>`;
     stage.querySelectorAll(".card").forEach(btn=>{
       btn.onclick=()=>signPlayer(parseInt(btn.dataset.i,10));
     });
-    document.getElementById("rerollBtn").onclick=()=>beginSpin();
+    const rr=document.getElementById("rerollBtn");
+    if(canReSpin) rr.onclick=()=>beginSpin(true);
   }
 
-  function spinHint(pos,rem,cands){
-    const affordable=cands.filter(c=>c.rec[6]<=rem);
-    if(affordable.length===0) return "Nothing here fits your budget — re-spin for a cheaper board.";
-    if(state.idx===0) return "Spend big on a stud QB and you'll be hunting bargains at RB and WR. Bank cash now and you're betting a good one shows up later.";
+  function spinDots(used){
+    let s="";
+    for(let i=0;i<SPIN_LIMIT;i++){
+      s+=`<span class="sd ${i<=used?'on':''}"></span>`;
+    }
+    return s;
+  }
+
+  function spinHint(pos,rem,cands,canReSpin,affordableExists){
+    if(!affordableExists && !canReSpin) return "Out of re-spins and nothing fits — sign the discount option and make the best of it.";
+    if(!affordableExists) return "Nothing here fits your budget — re-spin for a cheaper board.";
+    if(!canReSpin) return "Last board for this slot — no more re-spins. Pick from what's here.";
+    if(state.idx===0) return "You can afford at most one true blue-chip all game. Overspend on the QB and you're bargain-hunting the rest.";
     if(state.idx===1){
+      const affordable=cands.filter(c=>c.rec[6]<=rem);
       const cheap=Math.min(...affordable.map(c=>c.rec[6]));
-      return "One slot left after this. Leaving yourself "+money(rem-cheap)+"–"+money(rem)+" for a WR could mean a sleeper — or a star, if you saved enough.";
+      return "One slot left after this. Whatever you leave — "+money(rem-cheap)+" to "+money(rem)+" — is your entire WR budget.";
     }
     return "Last pick. Spend it all — unused NIL scores you nothing.";
   }
@@ -511,38 +564,54 @@
     state.picks.push(c);
     state.spent+=c.rec[6];
     state.idx++;
+    state.spinsUsed=0; // reset spin allowance for next position
     updateCap();
     updateRoster();
     if(state.idx>=3){ renderResult(); }
-    else { beginSpin(); }
+    else { beginSpin(false); }
   }
 
   // ---------- RESULT ----------
   function renderResult(){
     const [q,r,w]=state.picks.map(p=>p.rec);
-    const score=q[5]+r[5]+w[5]; // sum of values 0..3000
-    const beaten=percentile(score)*100; // % of trios you beat
-    const topPct=beaten; // "better than X%"
-    const gd=grade(topPct);
     const totYds=q[3]+r[3]+w[3];
     const totTds=q[4]+r[4]+w[4];
     const leftover=state.budget-state.spent;
 
-    // rank framing
-    const worseFrac=100-beaten;
-    const rankLine = beaten>=99.99
-      ? `A near-perfect build — top <b>0.01%</b> of all trios`
-      : `You'd beat <b>${beaten.toFixed(beaten>99?2:1)}%</b> of every possible QB-RB-WR trio`;
+    const ydsPct=totYds/MAX_YDS*100;   // % of the ceiling you reached
+    const tdsPct=totTds/MAX_TDS*100;
+    const overall=(ydsPct+tdsPct)/2;   // combined achievement vs best-possible trio
+    const gd=grade(overall);
+    const beat=realPercentile(overall); // % of realistic builds beaten
+    const topPctTxt = beat>=99.9 ? "Top 0.1%" : "Top "+(100-beat).toFixed(beat>=99?1:0)+"%";
 
     updateRoster();
     stage.className="stage fade";
     stage.innerHTML=`
       <div class="result-hero">
-        <div class="result-eyebrow">Trio Rating</div>
-        <div class="pct-big" id="pctBig">0%</div>
-        <div class="pct-label">Top Percentile</div>
-        <div class="rank-line">${rankLine}</div>
+        <div class="result-eyebrow">Trio Percentile</div>
+        <div class="pct-big" id="pctBig">0<span class="pctsign">%</span></div>
+        <div class="pct-label">${topPctTxt} of realistic builds</div>
         <div class="grade-chip disp" style="color:${gd.c};background:${gd.bg}">Grade ${gd.g}</div>
+      </div>
+
+      <div class="ceiling-block">
+        <div class="cl-row">
+          <div class="cl-head">
+            <span class="cl-lbl">Total Yards</span>
+            <span class="cl-nums"><b id="ydsNum" class="mono">0</b> <span class="cl-max">/ ${MAX_YDS.toLocaleString()} max</span></span>
+          </div>
+          <div class="cl-track"><div class="cl-fill yds" id="ydsFill" style="width:0%"></div></div>
+          <div class="cl-pct mono" id="ydsPctLbl">0% of max</div>
+        </div>
+        <div class="cl-row">
+          <div class="cl-head">
+            <span class="cl-lbl">Total Touchdowns</span>
+            <span class="cl-nums"><b id="tdsNum" class="mono">0</b> <span class="cl-max">/ ${MAX_TDS} max</span></span>
+          </div>
+          <div class="cl-track"><div class="cl-fill tds" id="tdsFill" style="width:0%"></div></div>
+          <div class="cl-pct mono" id="tdsPctLbl">0% of max</div>
+        </div>
       </div>
 
       <div class="final-roster">
@@ -552,14 +621,9 @@
       </div>
 
       <div class="summary-grid">
-        <div class="sg"><div class="k">Trio Score</div><div class="v pts">${score}<span style="font-size:11px;color:var(--steel)">/3000</span></div></div>
-        <div class="sg"><div class="k">Total Yards</div><div class="v">${totYds.toLocaleString()}</div></div>
-        <div class="sg"><div class="k">Total TDs</div><div class="v">${totTds}</div></div>
-      </div>
-      <div class="summary-grid" style="margin-top:0">
         <div class="sg"><div class="k">Spent</div><div class="v cash">${money(state.spent)}</div></div>
-        <div class="sg"><div class="k">Left on table</div><div class="v" style="color:${leftover>1500000?'var(--blitz)':'var(--steel-lt)'}">${money(leftover)}</div></div>
-        <div class="sg"><div class="k">Cost / point</div><div class="v">${money(Math.round(state.spent/Math.max(1,score)))}</div></div>
+        <div class="sg"><div class="k">Left unspent</div><div class="v" style="color:${leftover>1500000?'var(--blitz)':'var(--steel-lt)'}">${money(leftover)}</div></div>
+        <div class="sg"><div class="k">Yards / $M</div><div class="v pts">${Math.round(totYds/(state.spent/1e6)).toLocaleString()}</div></div>
       </div>
 
       <div class="btnrow">
@@ -569,10 +633,26 @@
       <div class="share-copied" id="shareCopied">Copied to clipboard</div>
     `;
     document.getElementById("againBtn").onclick=reset;
-    document.getElementById("shareBtn").onclick=()=>share(topPct,gd.g,score,totYds,totTds);
+    document.getElementById("shareBtn").onclick=()=>share(gd.g,totYds,totTds,ydsPct,tdsPct,beat);
 
-    // count-up animation
-    animatePct(topPct);
+    animatePctHero(beat);
+    animateBar("ydsNum","ydsFill","ydsPctLbl",totYds,ydsPct);
+    animateBar("tdsNum","tdsFill","tdsPctLbl",totTds,tdsPct);
+  }
+
+  function animatePctHero(target){
+    const el=document.getElementById("pctBig");
+    if(!el) return;
+    const dur=1300, start=performance.now();
+    const dec = target>=99?1:0;
+    function frame(t){
+      const p=Math.min(1,(t-start)/dur);
+      const eased=1-Math.pow(1-p,3);
+      el.innerHTML=(target*eased).toFixed(dec)+'<span class="pctsign">%</span>';
+      if(p<1) requestAnimationFrame(frame);
+      else el.innerHTML=target.toFixed(dec)+'<span class="pctsign">%</span>';
+    }
+    requestAnimationFrame(frame);
   }
 
   function finalRow(pos,rec){
@@ -584,35 +664,37 @@
       </div>
       <div class="frnums">
         <div><b>${rec[3].toLocaleString()}</b> yds · <b>${rec[4]}</b> TD</div>
-        <div class="v">value ${rec[5]}</div>
       </div>
     </div>`;
   }
 
-  function animatePct(target){
-    const el=document.getElementById("pctBig");
-    if(!el) return;
-    const dur=1100, start=performance.now();
-    const dec = target>99?2:(target>=10?0:1);
+  function animateBar(numId,fillId,pctId,targetNum,targetPct){
+    const numEl=document.getElementById(numId);
+    const fillEl=document.getElementById(fillId);
+    const pctEl=document.getElementById(pctId);
+    if(!numEl) return;
+    const dur=1200, start=performance.now();
     function frame(t){
       const p=Math.min(1,(t-start)/dur);
       const eased=1-Math.pow(1-p,3);
-      const val=target*eased;
-      el.textContent=val.toFixed(dec)+"%";
+      numEl.textContent=Math.round(targetNum*eased).toLocaleString();
+      fillEl.style.width=(targetPct*eased)+"%";
+      pctEl.textContent=(targetPct*eased).toFixed(1)+"% of max";
       if(p<1) requestAnimationFrame(frame);
-      else el.textContent=target.toFixed(dec)+"%";
+      else { numEl.textContent=targetNum.toLocaleString(); fillEl.style.width=targetPct+"%"; pctEl.textContent=targetPct.toFixed(1)+"% of max"; }
     }
     requestAnimationFrame(frame);
   }
 
-  function share(topPct,g,score,yds,tds){
+  function share(g,yds,tds,ydsPct,tdsPct,beat){
     const [q,r,w]=state.picks.map(p=>p.rec);
-    const txt=`🏈 Gridiron GM — my trio ranks TOP ${topPct.toFixed(topPct>99?2:1)}% (Grade ${g})
+    const topTxt = beat>=99.9 ? "Top 0.1%" : "Top "+(100-beat).toFixed(beat>=99?1:0)+"%";
+    const txt=`🏈 Gridiron GM — ${topTxt} · Grade ${g}
 QB ${q[0]} '${String(q[2]).slice(2)}
 RB ${r[0]} '${String(r[2]).slice(2)}
 WR ${w[0]} '${String(w[2]).slice(2)}
-${score}/3000 · ${yds.toLocaleString()} yds · ${tds} TD
-Build yours: ${location.origin}${location.pathname}`;
+${yds.toLocaleString()} yds (${ydsPct.toFixed(0)}% of max) · ${tds} TD (${tdsPct.toFixed(0)}% of max)
+Build your trio: ${location.origin}${location.pathname}`;
     const done=()=>{const c=document.getElementById("shareCopied");c.classList.add("show");setTimeout(()=>c.classList.remove("show"),1800);};
     if(navigator.share && /Mobi|Android/i.test(navigator.userAgent)){
       navigator.share({text:txt}).catch(()=>copy(txt,done));
