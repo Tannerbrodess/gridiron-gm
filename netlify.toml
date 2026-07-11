@@ -1,0 +1,5 @@
+[build]
+  publish = "."
+
+# Pure static site — index.html has all game data embedded in gamedata.js.
+# No build step, no functions, no dependencies. Drag-and-drop OR Git both work.

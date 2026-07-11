@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Gridiron GM · Build the Trio</title>
+<meta name="description" content="Spend your NIL budget across a QB, RB, and WR to build the best offensive trio. Spin, sign, and rank against every possible trio." />
+<meta name="theme-color" content="#0B0F1A" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,600;0,800;0,900&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#0B0F1A;
+    --panel:#131A2A;
+    --panel-2:#1B2439;
+    --line:#26304a;
+    --cash:#00E08A;
+    --cash-dim:#0a8f5b;
+    --blitz:#FF5B2E;
+    --chalk:#F5F3EE;
+    --steel:#6B7689;
+    --steel-lt:#9AA6BC;
+    --gold:#FFC94D;
+    --shadow:0 18px 40px rgba(0,0,0,.45);
+    --r:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--ink);color:var(--chalk);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  body{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+  ::selection{background:var(--blitz);color:#fff}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  .mono{font-family:'Space Mono',monospace}
+  .disp{font-family:'Archivo',sans-serif}
+
+  /* ---------- Ambient backdrop ---------- */
+  .field-glow{position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(900px 500px at 50% -8%, rgba(0,224,138,.10), transparent 60%),
+      radial-gradient(700px 500px at 90% 110%, rgba(255,91,46,.10), transparent 60%);}
+  .yardlines{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.05;
+    background-image:repeating-linear-gradient(90deg, #fff 0 1px, transparent 1px 68px);}
+
+  .wrap{position:relative;z-index:1;width:100%;max-width:760px;margin:0 auto;padding:18px 16px 40px;flex:1;display:flex;flex-direction:column}
+
+  /* ---------- Header ---------- */
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .brand{display:flex;align-items:center;gap:11px;min-width:0}
+  .crest{width:38px;height:38px;border-radius:10px;flex:none;position:relative;
+    background:linear-gradient(150deg,var(--blitz),#c8340f);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 6px 16px rgba(255,91,46,.35);
+    display:grid;place-items:center}
+  .crest svg{width:22px;height:22px}
+  .brand h1{font-family:'Archivo';font-weight:900;font-size:20px;letter-spacing:-.02em;line-height:1;text-transform:uppercase}
+  .brand .sub{font-size:11px;color:var(--steel);letter-spacing:.14em;text-transform:uppercase;margin-top:3px}
+  .hbtn{font-size:12px;color:var(--steel-lt);border:1px solid var(--line);padding:8px 12px;border-radius:9px;letter-spacing:.02em;transition:.15s;white-space:nowrap}
+  .hbtn:hover{border-color:var(--steel);color:var(--chalk)}
+
+  /* ---------- Cap / budget bar ---------- */
+  .capbar{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-bottom:16px;box-shadow:var(--shadow)}
+  .capbar-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+  .capbar-top .lbl{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--steel)}
+  .capbar-top .amt{font-family:'Space Mono';font-weight:700;font-size:23px;color:var(--cash);letter-spacing:-.01em;transition:color .3s}
+  .capbar-top .amt.broke{color:var(--blitz)}
+  .track{height:9px;border-radius:6px;background:#0a0f1c;overflow:hidden;position:relative;box-shadow:inset 0 1px 3px rgba(0,0,0,.6)}
+  .track .fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--cash-dim),var(--cash));transition:width .5s cubic-bezier(.2,.8,.2,1);position:relative}
+  .track .fill::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.28));opacity:.5}
+  .capbar-foot{display:flex;justify-content:space-between;margin-top:9px;font-size:11px;color:var(--steel)}
+  .capbar-foot .spent{color:var(--steel-lt)}
+
+  /* ---------- Roster slots ---------- */
+  .roster{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:18px}
+  .slot{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 10px;min-height:96px;display:flex;flex-direction:column;justify-content:space-between;position:relative;transition:.25s}
+  .slot .pos{font-family:'Archivo';font-weight:800;font-size:12px;letter-spacing:.12em;color:var(--steel)}
+  .slot.filled{border-color:var(--cash-dim);background:linear-gradient(180deg,rgba(0,224,138,.06),var(--panel))}
+  .slot.active{border-color:var(--blitz);box-shadow:0 0 0 1px var(--blitz),0 8px 22px rgba(255,91,46,.22)}
+  .slot .pname{font-family:'Archivo';font-weight:700;font-size:13px;line-height:1.1;margin-top:6px}
+  .slot .pmeta{font-size:10px;color:var(--steel-lt);margin-top:2px}
+  .slot .pcost{font-family:'Space Mono';font-size:11px;color:var(--cash);margin-top:auto;padding-top:6px}
+  .slot .empty{font-size:11px;color:var(--steel);margin-top:8px;line-height:1.3}
+  .slot .tick{position:absolute;top:9px;right:9px;width:16px;height:16px;border-radius:50%;background:var(--cash);display:none;place-items:center}
+  .slot.filled .tick{display:grid}
+  .slot .tick svg{width:10px;height:10px}
+
+  /* ---------- Stage ---------- */
+  .stage{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:var(--r);padding:20px 18px 22px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .stage-eyebrow{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--steel);margin-bottom:4px}
+  .stage-eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--blitz);box-shadow:0 0 8px var(--blitz)}
+  .stage-title{font-family:'Archivo';font-weight:900;font-size:26px;letter-spacing:-.02em;line-height:1.05;text-transform:uppercase;margin-bottom:6px}
+  .stage-desc{font-size:13px;color:var(--steel-lt);line-height:1.5;max-width:52ch}
+
+  .cta{display:inline-flex;align-items:center;gap:9px;background:var(--blitz);color:#fff;font-family:'Archivo';font-weight:800;font-size:15px;letter-spacing:.02em;text-transform:uppercase;padding:14px 24px;border-radius:11px;margin-top:18px;transition:.15s;box-shadow:0 10px 24px rgba(255,91,46,.3)}
+  .cta:hover{transform:translateY(-1px);box-shadow:0 14px 30px rgba(255,91,46,.4)}
+  .cta:active{transform:translateY(0)}
+  .cta.ghost{background:transparent;color:var(--chalk);border:1px solid var(--line);box-shadow:none}
+  .cta.ghost:hover{border-color:var(--steel);transform:none;box-shadow:none}
+  .cta.cash{background:var(--cash);color:#062615;box-shadow:0 10px 24px rgba(0,224,138,.3)}
+  .cta.cash:hover{box-shadow:0 14px 30px rgba(0,224,138,.4)}
+  .cta:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px}
+  .btnrow .cta{margin-top:0}
+
+  /* ---------- Spin candidates ---------- */
+  .spinhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+  .spinhead .now-picking{font-family:'Archivo';font-weight:900;font-size:22px;text-transform:uppercase;letter-spacing:-.01em}
+  .spinhead .now-picking b{color:var(--blitz)}
+  .spinhead .budget-mini{font-family:'Space Mono';font-size:13px;color:var(--cash)}
+  .cards{display:grid;gap:10px}
+  .card{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:13px;text-align:left;transition:.18s;position:relative;overflow:hidden;width:100%}
+  .card:not(:disabled):hover{border-color:var(--cash-dim);transform:translateX(3px)}
+  .card:disabled{opacity:.42;cursor:not-allowed}
+  .card .rk{font-family:'Archivo';font-weight:900;font-size:15px;color:var(--steel);width:20px;flex:none;text-align:center}
+  .card .info{flex:1;min-width:0}
+  .card .nm{font-family:'Archivo';font-weight:700;font-size:16px;line-height:1.15;letter-spacing:-.01em}
+  .card .mt{font-size:11px;color:var(--steel-lt);margin-top:3px}
+  .card .statline{display:flex;gap:12px;margin-top:7px}
+  .card .stat{font-size:11px;color:var(--steel-lt)}
+  .card .stat b{color:var(--chalk);font-weight:600}
+  .card .price{text-align:right;flex:none}
+  .card .price .p{font-family:'Space Mono';font-weight:700;font-size:15px;color:var(--cash);white-space:nowrap}
+  .card .price.unaff .p{color:var(--blitz)}
+  .card .price .tag{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel);margin-top:3px}
+  .tier{position:absolute;left:0;top:0;bottom:0;width:3px}
+  .tier.elite{background:var(--gold)}.tier.stud{background:var(--blitz)}.tier.starter{background:var(--cash)}.tier.value{background:var(--steel)}
+
+  /* spinning animation */
+  .reel{min-height:200px;display:flex;flex-direction:column;justify-content:center;gap:10px}
+  .reelcard{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:15px;display:flex;align-items:center;gap:13px;opacity:.5}
+  .reelcard .rn{font-family:'Archivo';font-weight:800;font-size:16px;filter:blur(.4px)}
+  .reelcard .rp{font-family:'Space Mono';font-weight:700;font-size:15px;color:var(--cash);margin-left:auto}
+  @keyframes flick{0%{opacity:.25;transform:translateY(6px)}100%{opacity:.7;transform:translateY(0)}}
+  .reelcard{animation:flick .12s linear}
+
+  .microcopy{font-size:11.5px;color:var(--steel);margin-top:13px;line-height:1.4}
+
+  /* ---------- Result ---------- */
+  .result-hero{text-align:center;padding:8px 0 4px}
+  .result-eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--steel);margin-bottom:10px}
+  .pct-big{font-family:'Archivo';font-weight:900;font-size:72px;line-height:.9;letter-spacing:-.03em;background:linear-gradient(180deg,#fff,var(--cash));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:2px}
+  .pct-label{font-family:'Archivo';font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:.04em;color:var(--cash);margin-bottom:6px}
+  .rank-line{font-size:13px;color:var(--steel-lt);margin-bottom:2px}
+  .rank-line b{color:var(--chalk);font-family:'Space Mono'}
+  .grade-chip{display:inline-block;font-family:'Archivo';font-weight:900;font-size:13px;padding:5px 14px;border-radius:20px;letter-spacing:.05em;margin-top:12px}
+
+  .final-roster{display:grid;gap:9px;margin:22px 0 6px}
+  .fr{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:13px}
+  .fr .frpos{font-family:'Archivo';font-weight:900;font-size:13px;color:var(--blitz);width:34px;flex:none}
+  .fr .frinfo{flex:1;min-width:0}
+  .fr .frname{font-family:'Archivo';font-weight:700;font-size:15px}
+  .fr .frmeta{font-size:11px;color:var(--steel-lt);margin-top:2px}
+  .fr .frnums{text-align:right;flex:none;font-size:11px;color:var(--steel-lt);line-height:1.5}
+  .fr .frnums b{color:var(--chalk);font-family:'Space Mono'}
+  .fr .frnums .v{color:var(--cash)}
+
+  .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:18px 0}
+  .sg{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:12px;text-align:center}
+  .sg .k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--steel);margin-bottom:6px}
+  .sg .v{font-family:'Space Mono';font-weight:700;font-size:17px}
+  .sg .v.cash{color:var(--cash)}
+  .sg .v.pts{color:var(--gold)}
+
+  .share-copied{font-size:12px;color:var(--cash);margin-top:10px;height:14px;transition:.2s;opacity:0}
+  .share-copied.show{opacity:1}
+
+  /* ---------- helpers / footer ---------- */
+  .hidden{display:none!important}
+  .fade{animation:fade .4s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  footer{text-align:center;font-size:11px;color:var(--steel);margin-top:26px;line-height:1.6}
+  footer a{color:var(--steel-lt);text-decoration:none;border-bottom:1px solid var(--line)}
+
+  /* modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(5,8,15,.8);backdrop-filter:blur(4px);z-index:50;display:none;align-items:center;justify-content:center;padding:20px}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px;max-width:440px;width:100%;box-shadow:var(--shadow);animation:fade .3s}
+  .modal h3{font-family:'Archivo';font-weight:900;font-size:20px;text-transform:uppercase;margin-bottom:14px}
+  .modal p{font-size:13.5px;color:var(--steel-lt);line-height:1.6;margin-bottom:12px}
+  .modal .step{display:flex;gap:11px;margin-bottom:12px;align-items:flex-start}
+  .modal .step .n{font-family:'Archivo';font-weight:900;color:var(--blitz);font-size:15px;flex:none;width:20px}
+  .modal .step .t{font-size:13px;color:var(--steel-lt);line-height:1.5}
+  .modal .step .t b{color:var(--chalk)}
+  .modal-close{width:100%;margin-top:8px;background:var(--panel-2);border:1px solid var(--line);padding:12px;border-radius:10px;font-family:'Archivo';font-weight:700;text-transform:uppercase;font-size:13px;letter-spacing:.03em;transition:.15s}
+  .modal-close:hover{border-color:var(--steel)}
+
+  @media(max-width:560px){
+    .pct-big{font-size:60px}
+    .stage-title{font-size:22px}
+    .roster{gap:7px}
+    .slot{padding:9px 8px;min-height:88px}
+    .brand h1{font-size:17px}
+  }
+</style>
+</head>
+<body>
+<div class="field-glow"></div>
+<div class="yardlines"></div>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="crest">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C7 5 4 8 4 12s3 7 8 10c5-3 8-6 8-10s-3-7-8-10Z" stroke="#fff" stroke-width="1.6" fill="rgba(255,255,255,.12)"/><path d="M12 6v12M9 9l6 6M15 9l-6 6" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <h1>Gridiron GM</h1>
+        <div class="sub">NIL Trio Builder</div>
+      </div>
+    </div>
+    <button class="hbtn" id="howBtn">How to play</button>
+  </header>
+
+  <!-- CAP BAR -->
+  <div class="capbar">
+    <div class="capbar-top">
+      <span class="lbl">NIL Budget Remaining</span>
+      <span class="amt mono" id="capAmt">$10.0M</span>
+    </div>
+    <div class="track"><div class="fill" id="capFill" style="width:100%"></div></div>
+    <div class="capbar-foot">
+      <span class="spent" id="capSpent">$0 committed</span>
+      <span id="capSlots">0 of 3 signed</span>
+    </div>
+  </div>
+
+  <!-- ROSTER -->
+  <div class="roster" id="roster">
+    <div class="slot" data-pos="QB">
+      <div class="pos">QB</div>
+      <div class="body"><div class="empty">On the clock</div></div>
+      <div class="tick"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#062615" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    </div>
+    <div class="slot" data-pos="RB">
+      <div class="pos">RB</div>
+      <div class="body"><div class="empty">Locked</div></div>
+      <div class="tick"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#062615" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    </div>
+    <div class="slot" data-pos="WR">
+      <div class="pos">WR</div>
+      <div class="body"><div class="empty">Locked</div></div>
+      <div class="tick"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#062615" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    </div>
+  </div>
+
+  <!-- STAGE (swaps content per phase) -->
+  <div class="stage" id="stage"><!-- injected --></div>
+
+  <footer>
+    Real player-seasons, 2015–2025 · Value = production percentile within position<br/>
+    <span id="poolCount"></span>
+  </footer>
+</div>
+
+<!-- HOW TO MODAL -->
+<div class="modal-bg" id="howModal">
+  <div class="modal">
+    <h3>Build the Trio</h3>
+    <p>You've got an <b style="color:var(--cash)">NIL budget</b> to sign one QB, one RB, and one WR from the last 11 years of college football. Best three-man offense wins.</p>
+    <div class="step"><div class="n">1</div><div class="t"><b>Spin each position</b> — QB first, then RB, then WR. Every spin deals you a fresh set of real players at different NIL prices.</div></div>
+    <div class="step"><div class="n">2</div><div class="t"><b>Sign one, bank the rest.</b> Overspend on your QB and you'll be bargain-hunting the RB and WR — and you can't see the next spin until you commit.</div></div>
+    <div class="step"><div class="n">3</div><div class="t"><b>Get ranked.</b> Every player's value is their production percentile at their position, so a great RB counts as much as a great QB. Your trio is scored against <b>every possible trio</b> in the pool.</div></div>
+    <p style="margin-top:4px;font-size:12px;color:var(--steel)">The perfect trio costs way more than you have. That's the point — find value, not just stars.</p>
+    <button class="modal-close" id="closeModal">Got it</button>
+  </div>
+</div>
+
+<script src="gamedata.js"></script>
+<script>
+(function(){
+  "use strict";
+  const QB=GAMEDATA.QB, RB=GAMEDATA.RB, WR=GAMEDATA.WR, CDF=GAMEDATA.CDF;
+  // record = [name, team, season, yards, tds, val, cost]
+  const POOL={QB,RB,WR};
+  const ORDER=["QB","RB","WR"];
+  const POSNAME={QB:"Quarterback",RB:"Running Back",WR:"Wide Receiver"};
+  const BUDGET=10_000_000;
+  const CANDIDATES=4; // per spin
+
+  let state=null;
+  function fresh(){
+    return {budget:BUDGET, spent:0, idx:0, picks:[], currentSpin:null};
+  }
+
+  // ---- money formatting ----
+  function money(n){
+    if(n>=1_000_000){ const m=n/1_000_000; return "$"+(m%1===0?m.toFixed(0):m.toFixed(1))+"M"; }
+    if(n>=1_000){ return "$"+Math.round(n/1000)+"K"; }
+    return "$"+n;
+  }
+  function moneyFull(n){ return "$"+n.toLocaleString("en-US"); }
+
+  // ---- weighted random draw for a spin ----
+  // Give a spread: bias toward affordable players but always include aspirational ones.
+  function drawCandidates(pos, remaining){
+    const list=POOL[pos];
+    const n=list.length;
+    const chosen=[];
+    const used=new Set();
+    // Always try to seat one "aspirational" (expensive), a couple mid, one bargain.
+    // We do weighted sampling without replacement across the whole list.
+    // Weight: everything gets base weight; slight lift for players near a few price bands
+    // so a spin feels varied rather than all-cheap or all-expensive.
+    function pick(filterFn){
+      // gather candidates passing filter and not used
+      const poolIdx=[];
+      for(let i=0;i<n;i++){ if(!used.has(i) && filterFn(list[i])) poolIdx.push(i); }
+      if(!poolIdx.length) return -1;
+      const r=poolIdx[(Math.random()*poolIdx.length)|0];
+      used.add(r); return r;
+    }
+    // Band 1: a star (top ~15% by cost) — aspirational, maybe unaffordable
+    let a=pick(p=>p[6]>=2_600_000);
+    // Band 2: upper-mid
+    let b=pick(p=>p[6]>=1_000_000 && p[6]<2_600_000);
+    // Band 3: mid/value
+    let c=pick(p=>p[6]>=250_000 && p[6]<1_000_000);
+    // Band 4: bargain
+    let d=pick(p=>p[6]<250_000);
+    let raw=[a,b,c,d].filter(x=>x>=0);
+    // Fill any missing slots with random unused
+    while(raw.length<CANDIDATES){
+      const r=pick(()=>true);
+      if(r<0) break;
+      raw.push(r);
+    }
+    // If nothing affordable at all is present, force-insert the cheapest overall
+    const anyAffordable=raw.some(i=>list[i][6]<=remaining);
+    if(!anyAffordable){
+      // find global cheapest
+      let ci=0; for(let i=1;i<n;i++){ if(list[i][6]<list[ci][6]) ci=i; }
+      if(!used.has(ci)){ raw[raw.length-1]=ci; }
+    }
+    // sort by cost desc for display
+    raw.sort((x,y)=>list[y][6]-list[x][6]);
+    return raw.map(i=>({i,rec:list[i]}));
+  }
+
+  function tierOf(cost){
+    if(cost>=2_600_000) return "elite";
+    if(cost>=1_000_000) return "stud";
+    if(cost>=250_000) return "starter";
+    return "value";
+  }
+  function tierLabel(cost){
+    if(cost>=2_600_000) return "Blue chip";
+    if(cost>=1_000_000) return "Impact";
+    if(cost>=250_000) return "Starter";
+    return "Sleeper";
+  }
+
+  // ---- percentile from CDF (index = trio score 0..3000) ----
+  function percentile(score){
+    const s=Math.max(0,Math.min(3000,score|0));
+    return CDF[s]/1000; // fraction of trios beaten, 0..1
+  }
+  function grade(topPct){ // topPct = % of trios you're better than
+    if(topPct>=99.5) return {g:"S+",c:"#FFC94D",bg:"rgba(255,201,77,.14)"};
+    if(topPct>=98) return {g:"S",c:"#FFC94D",bg:"rgba(255,201,77,.12)"};
+    if(topPct>=94) return {g:"A",c:"#00E08A",bg:"rgba(0,224,138,.14)"};
+    if(topPct>=85) return {g:"B",c:"#00E08A",bg:"rgba(0,224,138,.10)"};
+    if(topPct>=65) return {g:"C",c:"#9AA6BC",bg:"rgba(154,166,188,.12)"};
+    if(topPct>=40) return {g:"D",c:"#FF9B6E",bg:"rgba(255,91,46,.10)"};
+    return {g:"F",c:"#FF5B2E",bg:"rgba(255,91,46,.14)"};
+  }
+
+  // ---- DOM refs ----
+  const stage=document.getElementById("stage");
+  const capAmt=document.getElementById("capAmt");
+  const capFill=document.getElementById("capFill");
+  const capSpent=document.getElementById("capSpent");
+  const capSlots=document.getElementById("capSlots");
+  const rosterEl=document.getElementById("roster");
+
+  function updateCap(){
+    const rem=state.budget-state.spent;
+    capAmt.textContent=money(rem);
+    capAmt.classList.toggle("broke", rem< 100000);
+    capFill.style.width=Math.max(0,(rem/state.budget*100))+"%";
+    capSpent.textContent=state.spent? moneyFull(state.spent)+" committed":"$0 committed";
+    capSlots.textContent=state.picks.length+" of 3 signed";
+  }
+
+  function updateRoster(){
+    const slots=rosterEl.querySelectorAll(".slot");
+    slots.forEach((slot,i)=>{
+      const pos=slot.dataset.pos;
+      const body=slot.querySelector(".body");
+      const pick=state.picks[i];
+      slot.classList.remove("active","filled");
+      if(pick){
+        slot.classList.add("filled");
+        body.innerHTML=`<div class="pname">${esc(pick.rec[0])}</div>
+          <div class="pmeta">${pick.rec[1]} · ${pick.rec[2]}</div>
+          <div class="pcost mono">${money(pick.rec[6])}</div>`;
+      } else if(i===state.idx){
+        slot.classList.add("active");
+        body.innerHTML=`<div class="empty" style="color:var(--blitz)">On the clock</div>`;
+      } else {
+        body.innerHTML=`<div class="empty">${i<state.idx?'—':'Locked'}</div>`;
+      }
+    });
+  }
+
+  function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+  // ---------- PHASES ----------
+  function renderIntro(){
+    stage.className="stage fade";
+    stage.innerHTML=`
+      <div class="stage-eyebrow"><span class="dot"></span>Front Office · Open</div>
+      <div class="stage-title">Ten million to spend.<br/>Three players to sign.</div>
+      <div class="stage-desc">Spin for a quarterback, then a running back, then a receiver. Each spin deals real player-seasons at live NIL prices. Bank what you don't spend — you'll need it, because you can't see the next spin until you sign.</div>
+      <div class="btnrow">
+        <button class="cta" id="startBtn">Start signing <span aria-hidden="true">→</span></button>
+        <button class="cta ghost" id="introHow">How scoring works</button>
+      </div>`;
+    document.getElementById("startBtn").onclick=()=>beginSpin();
+    document.getElementById("introHow").onclick=openModal;
+  }
+
+  function beginSpin(){
+    const pos=ORDER[state.idx];
+    const rem=state.budget-state.spent;
+    updateRoster();
+    // spinning animation first
+    stage.className="stage fade";
+    stage.innerHTML=`
+      <div class="spinhead">
+        <div class="now-picking">Spinning the <b>${pos}</b> board…</div>
+        <div class="budget-mini mono">${money(rem)} left</div>
+      </div>
+      <div class="reel" id="reel"></div>`;
+    const reel=document.getElementById("reel");
+    const list=POOL[pos];
+    let ticks=0;
+    const total=14;
+    const iv=setInterval(()=>{
+      ticks++;
+      let html="";
+      for(let k=0;k<CANDIDATES;k++){
+        const r=list[(Math.random()*list.length)|0];
+        html+=`<div class="reelcard"><span class="rn">${esc(r[0])}</span><span class="rp mono">${money(r[6])}</span></div>`;
+      }
+      reel.innerHTML=html;
+      if(ticks>=total){
+        clearInterval(iv);
+        state.currentSpin=drawCandidates(pos, rem);
+        renderSpin();
+      }
+    }, 70);
+  }
+
+  function renderSpin(){
+    const pos=ORDER[state.idx];
+    const rem=state.budget-state.spent;
+    const cands=state.currentSpin;
+    updateRoster();
+    let cardsHtml="";
+    cands.forEach((c,i)=>{
+      const rec=c.rec;
+      const cost=rec[6];
+      const aff=cost<=rem;
+      const tier=tierOf(cost);
+      cardsHtml+=`
+        <button class="card" data-i="${i}" ${aff?"":"disabled"}>
+          <span class="tier ${tier}"></span>
+          <span class="rk">${i+1}</span>
+          <span class="info">
+            <span class="nm">${esc(rec[0])}</span>
+            <span class="mt">${rec[1]} · ${rec[2]} season</span>
+            <span class="statline">
+              <span class="stat"><b>${rec[3].toLocaleString()}</b> yds</span>
+              <span class="stat"><b>${rec[4]}</b> TD</span>
+              <span class="stat">value <b>${rec[5]}</b></span>
+            </span>
+          </span>
+          <span class="price ${aff?'':'unaff'}">
+            <span class="p mono">${money(cost)}</span>
+            <span class="tag">${aff?tierLabel(cost):"Over budget"}</span>
+          </span>
+        </button>`;
+    });
+    stage.className="stage fade";
+    stage.innerHTML=`
+      <div class="spinhead">
+        <div class="now-picking">Sign a <b>${pos}</b></div>
+        <div class="budget-mini mono">${money(rem)} left</div>
+      </div>
+      <div class="cards">${cardsHtml}</div>
+      <div class="microcopy">${spinHint(pos,rem,cands)}</div>
+      <div class="btnrow">
+        <button class="cta ghost" id="rerollBtn" title="Deal a new board — no penalty">↻ Re-spin this board</button>
+      </div>`;
+    stage.querySelectorAll(".card").forEach(btn=>{
+      btn.onclick=()=>signPlayer(parseInt(btn.dataset.i,10));
+    });
+    document.getElementById("rerollBtn").onclick=()=>beginSpin();
+  }
+
+  function spinHint(pos,rem,cands){
+    const affordable=cands.filter(c=>c.rec[6]<=rem);
+    if(affordable.length===0) return "Nothing here fits your budget — re-spin for a cheaper board.";
+    if(state.idx===0) return "Spend big on a stud QB and you'll be hunting bargains at RB and WR. Bank cash now and you're betting a good one shows up later.";
+    if(state.idx===1){
+      const cheap=Math.min(...affordable.map(c=>c.rec[6]));
+      return "One slot left after this. Leaving yourself "+money(rem-cheap)+"–"+money(rem)+" for a WR could mean a sleeper — or a star, if you saved enough.";
+    }
+    return "Last pick. Spend it all — unused NIL scores you nothing.";
+  }
+
+  function signPlayer(i){
+    const c=state.currentSpin[i];
+    state.picks.push(c);
+    state.spent+=c.rec[6];
+    state.idx++;
+    updateCap();
+    updateRoster();
+    if(state.idx>=3){ renderResult(); }
+    else { beginSpin(); }
+  }
+
+  // ---------- RESULT ----------
+  function renderResult(){
+    const [q,r,w]=state.picks.map(p=>p.rec);
+    const score=q[5]+r[5]+w[5]; // sum of values 0..3000
+    const beaten=percentile(score)*100; // % of trios you beat
+    const topPct=beaten; // "better than X%"
+    const gd=grade(topPct);
+    const totYds=q[3]+r[3]+w[3];
+    const totTds=q[4]+r[4]+w[4];
+    const leftover=state.budget-state.spent;
+
+    // rank framing
+    const worseFrac=100-beaten;
+    const rankLine = beaten>=99.99
+      ? `A near-perfect build — top <b>0.01%</b> of all trios`
+      : `You'd beat <b>${beaten.toFixed(beaten>99?2:1)}%</b> of every possible QB-RB-WR trio`;
+
+    updateRoster();
+    stage.className="stage fade";
+    stage.innerHTML=`
+      <div class="result-hero">
+        <div class="result-eyebrow">Trio Rating</div>
+        <div class="pct-big" id="pctBig">0%</div>
+        <div class="pct-label">Top Percentile</div>
+        <div class="rank-line">${rankLine}</div>
+        <div class="grade-chip disp" style="color:${gd.c};background:${gd.bg}">Grade ${gd.g}</div>
+      </div>
+
+      <div class="final-roster">
+        ${finalRow("QB",q)}
+        ${finalRow("RB",r)}
+        ${finalRow("WR",w)}
+      </div>
+
+      <div class="summary-grid">
+        <div class="sg"><div class="k">Trio Score</div><div class="v pts">${score}<span style="font-size:11px;color:var(--steel)">/3000</span></div></div>
+        <div class="sg"><div class="k">Total Yards</div><div class="v">${totYds.toLocaleString()}</div></div>
+        <div class="sg"><div class="k">Total TDs</div><div class="v">${totTds}</div></div>
+      </div>
+      <div class="summary-grid" style="margin-top:0">
+        <div class="sg"><div class="k">Spent</div><div class="v cash">${money(state.spent)}</div></div>
+        <div class="sg"><div class="k">Left on table</div><div class="v" style="color:${leftover>1500000?'var(--blitz)':'var(--steel-lt)'}">${money(leftover)}</div></div>
+        <div class="sg"><div class="k">Cost / point</div><div class="v">${money(Math.round(state.spent/Math.max(1,score)))}</div></div>
+      </div>
+
+      <div class="btnrow">
+        <button class="cta cash" id="againBtn">New draft <span aria-hidden="true">↻</span></button>
+        <button class="cta ghost" id="shareBtn">Share result</button>
+      </div>
+      <div class="share-copied" id="shareCopied">Copied to clipboard</div>
+    `;
+    document.getElementById("againBtn").onclick=reset;
+    document.getElementById("shareBtn").onclick=()=>share(topPct,gd.g,score,totYds,totTds);
+
+    // count-up animation
+    animatePct(topPct);
+  }
+
+  function finalRow(pos,rec){
+    return `<div class="fr">
+      <div class="frpos">${pos}</div>
+      <div class="frinfo">
+        <div class="frname">${esc(rec[0])}</div>
+        <div class="frmeta">${rec[1]} · ${rec[2]} · ${money(rec[6])}</div>
+      </div>
+      <div class="frnums">
+        <div><b>${rec[3].toLocaleString()}</b> yds · <b>${rec[4]}</b> TD</div>
+        <div class="v">value ${rec[5]}</div>
+      </div>
+    </div>`;
+  }
+
+  function animatePct(target){
+    const el=document.getElementById("pctBig");
+    if(!el) return;
+    const dur=1100, start=performance.now();
+    const dec = target>99?2:(target>=10?0:1);
+    function frame(t){
+      const p=Math.min(1,(t-start)/dur);
+      const eased=1-Math.pow(1-p,3);
+      const val=target*eased;
+      el.textContent=val.toFixed(dec)+"%";
+      if(p<1) requestAnimationFrame(frame);
+      else el.textContent=target.toFixed(dec)+"%";
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function share(topPct,g,score,yds,tds){
+    const [q,r,w]=state.picks.map(p=>p.rec);
+    const txt=`🏈 Gridiron GM — my trio ranks TOP ${topPct.toFixed(topPct>99?2:1)}% (Grade ${g})
+QB ${q[0]} '${String(q[2]).slice(2)}
+RB ${r[0]} '${String(r[2]).slice(2)}
+WR ${w[0]} '${String(w[2]).slice(2)}
+${score}/3000 · ${yds.toLocaleString()} yds · ${tds} TD
+Build yours: ${location.origin}${location.pathname}`;
+    const done=()=>{const c=document.getElementById("shareCopied");c.classList.add("show");setTimeout(()=>c.classList.remove("show"),1800);};
+    if(navigator.share && /Mobi|Android/i.test(navigator.userAgent)){
+      navigator.share({text:txt}).catch(()=>copy(txt,done));
+    } else copy(txt,done);
+  }
+  function copy(t,cb){
+    if(navigator.clipboard){navigator.clipboard.writeText(t).then(cb).catch(()=>fallbackCopy(t,cb));}
+    else fallbackCopy(t,cb);
+  }
+  function fallbackCopy(t,cb){
+    const ta=document.createElement("textarea");ta.value=t;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy");}catch(e){}document.body.removeChild(ta);cb();
+  }
+
+  function reset(){
+    state=fresh();
+    updateCap();
+    updateRoster();
+    renderIntro();
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+
+  // modal
+  function openModal(){document.getElementById("howModal").classList.add("open");}
+  document.getElementById("howBtn").onclick=openModal;
+  document.getElementById("closeModal").onclick=()=>document.getElementById("howModal").classList.remove("open");
+  document.getElementById("howModal").onclick=e=>{if(e.target.id==="howModal")e.target.classList.remove("open");};
+
+  // pool count footer
+  document.getElementById("poolCount").textContent=
+    `${(QB.length+RB.length+WR.length).toLocaleString()} player-seasons in the pool · ${QB.length} QB · ${RB.length} RB · ${WR.length} WR`;
+
+  // boot
+  state=fresh();
+  updateCap();
+  updateRoster();
+  renderIntro();
+})();
+</script>
+</body>
+</html>
